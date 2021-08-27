@@ -21,15 +21,26 @@
     {% csrf_token %}
     <div class="col-12">
       <label for="customFile" class="form-label"></label>
-      <input type="file" class="form-control" id="customFile" />
+      <input type="file" class="form-control" id="customFile" required />
+      <div class="invalid-feedback">Please select an image file.</div>
     </div>
     <div class="col-12">
-      <button
-        class="btn btn-primary"
-        type="submit"
-        value="Submit"
-        id="ajax-call"
-      >
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          value=""
+          id="invalidCheck"
+          required
+        />
+        <label class="form-check-label" for="invalidCheck">
+          Agree to terms and conditions
+        </label>
+        <div class="invalid-feedback">You must agree before submitting.</div>
+      </div>
+    </div>
+    <div class="col-12">
+      <button class="btn btn-primary" type="submit" id="ajax-call">
         Submit
       </button>
     </div>
@@ -65,36 +76,58 @@
 </main>
 <script>
   const tbody = document.querySelector("#table-results tbody");
-  document.querySelector("#ajax-call").addEventListener("click", (event) => {
-    event.preventDefault();
-    let formData = new FormData();
-    // On récupère la valeur du jeton CSRF
-    let csrfTokenValue = document.querySelector(
-      "[name=csrfmiddlewaretoken]"
-    ).value;
-    const request = new Request('{% url "predict:compute" %}', {
-      method: "POST",
-      body: formData,
-      headers: { "X-CSRFToken": csrfTokenValue }, // On ajoute le token dans l'en-tête
-    });
 
-    // On exécute la requête
-    fetch(request)
-      .then((response) => response.json())
-      .then((result) => {
-        const newRow = tbody.insertRow(0);
-        let newCell;
-        let newText;
+  // Fetch all the forms we want to apply custom Bootstrap validation styles to
+  const forms = document.querySelectorAll(".needs-validation");
+  // Loop over them and prevent submission
+  forms.forEach(function (form) {
+    form.addEventListener(
+      "submit",
+      function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          console.log("not valid");
+          event.stopPropagation();
+        } else {
+          event.preventDefault();
+          console.log("valid");
+          let formData = new FormData();
+          // On récupère la valeur du jeton CSRF
+          let csrfTokenValue = document.querySelector(
+            "[name=csrfmiddlewaretoken]"
+          ).value;
+          const request = new Request('{% url "predict:compute" %}', {
+            method: "POST",
+            body: formData,
+            headers: { "X-CSRFToken": csrfTokenValue }, // On ajoute le token dans l'en-tête
+          });
 
-        for (let [key, value] of Object.entries(result)) {
-          newCell = newRow.insertCell();
-          if (key == "image_url") {
-            newCell.innerHTML = `image of ${value}`;
-          } else {
-            newCell.innerHTML = value;
-          }
+          // On exécute la requête
+          fetch(request)
+            .then((response) => response.json())
+            .then((result) => {
+              const newRow = tbody.insertRow(0);
+              let newCell;
+              let newText;
+
+              for (let [key, value] of Object.entries(result)) {
+                newCell = newRow.insertCell();
+                if (key == "image_url") {
+                  newCell.innerHTML = `image of ${value}`;
+                } else {
+                  newCell.innerHTML = value;
+                }
+              }
+            });
         }
-      });
+        form.classList.add("was-validated");
+      },
+      false
+    );
+  });
+
+  document.querySelector("#ajax-call1").addEventListener("click", (event) => {
+    event.preventDefault();
   });
 </script>
 {% endblock %}
